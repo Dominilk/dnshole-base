@@ -15,7 +15,7 @@ public enum DNSStatus implements BitGroup {
 	NO_ERROR(0),
 	FORMAT_ERROR(4),
 	SERVER_FAILURE(2),
-	NAME_UNKNOWN(1);
+	NAME_UNKNOWN(3);
 	
 	private final byte data;
 	

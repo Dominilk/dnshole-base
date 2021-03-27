@@ -7,6 +7,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 
 import at.dominik.dnshole.io.Message;
 import at.dominik.dnshole.io.ServerPeer;
@@ -36,6 +37,22 @@ public class UDPForward implements DNSProcessor {
 	
 	@Override
 	public void processRequest(ServerPeer peer, DNSMessage message) throws Exception {
+		peer.send(this.forward(message));
+	}
+	
+	@Override
+	public void handleError(ServerPeer peer, Throwable throwable) {
+		if(throwable instanceof SocketTimeoutException) return;
+		
+		DNSProcessor.super.handleError(peer, throwable);
+	}
+	
+	/**
+	 * @param message
+	 * @return the response.
+	 */
+	public Message forward(DNSMessage message) throws Exception {
+		// TODO: Use asynchronous I/O instead of blocking DatagramSocket.
 		try(final DatagramSocket socket = new DatagramSocket()) {
 			socket.setSoTimeout(this.getSoTimeout());
 			
@@ -46,15 +63,8 @@ public class UDPForward implements DNSProcessor {
 			datagram.setData(new byte[512]);
 			socket.receive(datagram);
 			
-			peer.send(new Message(datagram.getData()));
+			return new Message(Arrays.copyOf(datagram.getData(), datagram.getLength()));
 		}
-	}
-	
-	@Override
-	public void handleError(ServerPeer peer, Throwable throwable) {
-		if(throwable instanceof SocketTimeoutException) return;
-		
-		DNSProcessor.super.handleError(peer, throwable);
 	}
 	
 	/**
