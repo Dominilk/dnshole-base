@@ -4,6 +4,8 @@
 package at.dominik.dnshole.io.servers.handlers;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import at.dominik.dnshole.io.Message;
 import at.dominik.dnshole.io.peers.NettyUDPPeer;
@@ -24,12 +26,14 @@ public class NettyDNSHandler extends SimpleChannelInboundHandler<DatagramPacket>
 	private static final AttributeKey<InetSocketAddress> RECIPIENT = AttributeKey.newInstance("recipient");
 	
 	private final NettyUDPServer server;
+	private final ExecutorService executorService;
 	
 	/**
 	 * @param server
 	 */
 	public NettyDNSHandler(NettyUDPServer server) {
 		this.server = server;
+		this.executorService = Executors.newCachedThreadPool();
 	}
 	
 	@Override
@@ -40,7 +44,17 @@ public class NettyDNSHandler extends SimpleChannelInboundHandler<DatagramPacket>
 		
 		packet.content().readBytes(content);
 		
-		this.getServer().handle(new NettyUDPPeer(context, packet.sender()), new Message(content));
+		this.getExecutorService().execute(() -> {
+			try {
+				this.getServer().handle(new NettyUDPPeer(context, packet.sender()), new Message(content));
+			}catch(Exception exception) {
+				try {
+					this.exceptionCaught(context, exception);
+				} catch (Exception exception2) {
+					context.close();
+				}
+			}
+		});
 	}
 
 	@Override
@@ -59,6 +73,13 @@ public class NettyDNSHandler extends SimpleChannelInboundHandler<DatagramPacket>
 	 */
 	public NettyUDPServer getServer() {
 		return server;
+	}
+	
+	/**
+	 * @return the executorService
+	 */
+	public ExecutorService getExecutorService() {
+		return executorService;
 	}
 	
 }
