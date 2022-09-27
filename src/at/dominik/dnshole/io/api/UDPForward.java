@@ -63,8 +63,8 @@ public class UDPForward implements DNSProcessor {
 			datagram.setData(new byte[512]);
 			socket.receive(datagram);
 			
-			return new Message(Arrays.copyOf(datagram.getData(), datagram.getLength()));
-		}
+			return new DNSMessage(new Message(Arrays.copyOf(datagram.getData(), datagram.getLength()))).toMessage();
+		}	
 	}
 	
 	/**

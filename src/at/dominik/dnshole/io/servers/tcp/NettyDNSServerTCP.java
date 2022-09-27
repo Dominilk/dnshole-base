@@ -13,6 +13,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -53,8 +54,8 @@ public class NettyDNSServerTCP extends DNSServer {
 		
 	}
 	
-	private final NioEventLoopGroup eventLoopGroup;
-	private final NioEventLoopGroup workerEventLoopGroup;
+	private final EventLoopGroup eventLoopGroup;
+	private final EventLoopGroup workerEventLoopGroup;
 	private final ServerBootstrap bootstrap;
 	private ChannelFuture channelFuture;
 	
@@ -62,7 +63,16 @@ public class NettyDNSServerTCP extends DNSServer {
 	 * 
 	 */
 	public NettyDNSServerTCP() {
-		this.bootstrap = new ServerBootstrap().channel(NioServerSocketChannel.class).group(this.eventLoopGroup = new NioEventLoopGroup(), this.workerEventLoopGroup = new NioEventLoopGroup()).childHandler(new ChannelInitializer<SocketChannel>() {
+		this(new NioEventLoopGroup(), new NioEventLoopGroup());
+	}
+	
+		
+	/**
+	 * @param eventLoopGroup
+	 * @param workerEventLoopGroup
+	 */
+	public NettyDNSServerTCP(EventLoopGroup eventLoopGroup, EventLoopGroup workerEventLoopGroup) {
+		this.bootstrap = new ServerBootstrap().channel(NioServerSocketChannel.class).group(this.eventLoopGroup = eventLoopGroup, this.workerEventLoopGroup = workerEventLoopGroup).childHandler(new ChannelInitializer<SocketChannel>() {
 
 			@Override
 			protected void initChannel(SocketChannel channel) throws Exception {
@@ -121,14 +131,14 @@ public class NettyDNSServerTCP extends DNSServer {
 	/**
 	 * @return the eventLoopGroup
 	 */
-	public NioEventLoopGroup getEventLoopGroup() {
+	public EventLoopGroup getEventLoopGroup() {
 		return eventLoopGroup;
 	}
 	
 	/**
 	 * @return the workerEventLoopGroup
 	 */
-	public NioEventLoopGroup getWorkerEventLoopGroup() {
+	public EventLoopGroup getWorkerEventLoopGroup() {
 		return workerEventLoopGroup;
 	}
 

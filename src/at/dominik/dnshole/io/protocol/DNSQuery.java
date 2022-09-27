@@ -17,10 +17,13 @@ public class DNSQuery {
 	// Today there is pretty much only one relevant query class.
 	public static final int CLASS_INET = 1;
 
+	// https://en.wikipedia.org/wiki/List_of_DNS_record_types: TODO: Add more in future.
+	
 	public static final int TYPE_A = 1;
 	public static final int TYPE_AAAA = 28;
 	public static final int TYPE_PTR = 12;
 	public static final int TYPE_UNKNOWN = 65;
+	public static final int TYPE_OPT = 41;
 
 	private byte[] name;
 	private int type;

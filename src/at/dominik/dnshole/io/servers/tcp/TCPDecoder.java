@@ -25,6 +25,8 @@ public class TCPDecoder extends MessageToMessageDecoder<ByteBuf> {
 		final ByteBuf messageLength = message.readBytes(2);
 		final int length = messageLength.readByte() << 8 | messageLength.readByte();
 		
+		messageLength.release();
+		
 		if(message.readableBytes() < length) {
 			message.resetReaderIndex();
 			

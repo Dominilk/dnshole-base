@@ -1,14 +1,38 @@
 # DNSHole - Base
-This repository contains the base-work for the actual DNSHole application.
-You can find a java client/server implementation of the DNS protocol here :)
+This is a pretty old project of mine where I implemented the DNS protocol in Java. This is the foundation for a pihole-like application, featuring a web-frontend & JavaFX desktop application.
 
-# Easy to use
-This library is designed to be easy-to-use and to allow you to change nearly every single detail of
-the protocol message. Here is an example showing how to create a simple DNS-proxy:
+> This code is relatively old so I verifying everything before using it.
+The project provides data structures for DNS messages & a small tcp/udp server implementation.
+
+# Example
 ```java
-try(NettyDNSServer server = new NettyDNSServer()) {
-	server.setRequestProcessor(new UDPForward(new InetSocketAddress("8.8.8.8", 53)));
-	
-	server.bind(new InetSocketAddress("0.0.0.0", 53)).channel().closeFuture().sync();
-}
+try(NettyDNSServerTCP tcp = new NettyDNSServerTCP()) {
+			tcp.setRequestProcessor(new UDPForward(new InetSocketAddress("8.8.8.8", 53)) {
+				
+				@Override
+				public void processRequest(ServerPeer peer, DNSMessage message) throws Exception {
+					final DNSMessage response = new DNSMessage(this.forward(message));
+					
+					peer.send(response.toMessage());
+				};
+				
+			});
+			
+			tcp.bind(new InetSocketAddress("0.0.0.0", 53)).sync();
+			
+			try(NettyDNSServer udp = new NettyDNSServer()) {
+				udp.setRequestProcessor(new UDPForward(new InetSocketAddress("8.8.8.8", 53)) {
+					
+					@Override
+					public void processRequest(ServerPeer peer, DNSMessage message) throws Exception {
+						final DNSMessage response = new DNSMessage(this.forward(message));
+						
+						peer.send(response.toMessage());
+					};
+					
+				});
+				
+				udp.bind(new InetSocketAddress("0.0.0.0", 53)).channel().closeFuture().sync();
+			}
+		}
 ```

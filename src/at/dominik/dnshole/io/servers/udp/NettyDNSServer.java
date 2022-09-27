@@ -15,6 +15,7 @@ import at.dominik.dnshole.io.peers.NettyUDPPeer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
@@ -31,7 +32,7 @@ import io.netty.util.AttributeKey;
  */
 public class NettyDNSServer extends DNSServer {
 
-	private static final AttributeKey<InetSocketAddress> RECIPIENT = AttributeKey.newInstance("recipient");
+	private static final AttributeKey<InetSocketAddress> SENDER = AttributeKey.newInstance("sender");
 	
 	/**
 	 * @author Dominik Fluch
@@ -52,8 +53,7 @@ public class NettyDNSServer extends DNSServer {
 		
 		@Override
 		protected void channelRead0(ChannelHandlerContext context, DatagramPacket packet) throws Exception {
-			context.channel().attr(NettyDNSServer.RECIPIENT).set(packet.recipient());
-			
+			context.channel().attr(NettyDNSServer.SENDER).set(packet.sender());
 			final byte[] content = new byte[packet.content().readableBytes()];
 			
 			packet.content().readBytes(content);
@@ -76,7 +76,7 @@ public class NettyDNSServer extends DNSServer {
 		
 		@Override
 		public void exceptionCaught(ChannelHandlerContext context, Throwable cause) throws Exception {
-			final InetSocketAddress recipient = context.channel().remoteAddress() instanceof InetSocketAddress ? (InetSocketAddress) context.channel().remoteAddress() : context.channel().hasAttr(NettyDNSServer.RECIPIENT) ? context.channel().attr(NettyDNSServer.RECIPIENT).get() : null;
+			final InetSocketAddress recipient = context.channel().remoteAddress() instanceof InetSocketAddress ? (InetSocketAddress) context.channel().remoteAddress() : context.channel().hasAttr(NettyDNSServer.SENDER) ? context.channel().attr(NettyDNSServer.SENDER).get() : null;
 			NettyDNSServer.this.handleError(recipient != null ? new NettyUDPPeer(context, recipient) : null, cause);
 		}
 		
@@ -90,7 +90,7 @@ public class NettyDNSServer extends DNSServer {
 	}
 
 	
-	private final NioEventLoopGroup eventLoopGroup;
+	private final EventLoopGroup eventLoopGroup;
 	private final Bootstrap bootstrap;
 	private ChannelFuture channelFuture;
 	
@@ -98,8 +98,15 @@ public class NettyDNSServer extends DNSServer {
 	 * 
 	 */
 	public NettyDNSServer() {
+		this(new NioEventLoopGroup());
+	}
+	
+	/**
+	 * @param eventLoopGroup
+	 */
+	public NettyDNSServer(EventLoopGroup eventLoopGroup) {
 		// TODO: Currently Datagram -> Message logic is in handler. Maybe add encoder/decoder in future here?
-		this.bootstrap = new Bootstrap().channel(NioDatagramChannel.class).group(this.eventLoopGroup = new NioEventLoopGroup()).handler(this.new NettyHandler());
+		this.bootstrap = new Bootstrap().channel(NioDatagramChannel.class).group(this.eventLoopGroup = eventLoopGroup).handler(this.new NettyHandler());
 	}
 	
 	@Override
@@ -149,7 +156,7 @@ public class NettyDNSServer extends DNSServer {
 	/**
 	 * @return the eventLoopGroup
 	 */
-	public NioEventLoopGroup getEventLoopGroup() {
+	public EventLoopGroup getEventLoopGroup() {
 		return eventLoopGroup;
 	}
 

@@ -5,6 +5,7 @@ package at.dominik.dnshole.io.peers;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import at.dominik.dnshole.io.Message;
 import io.netty.buffer.Unpooled;
@@ -19,28 +20,33 @@ import io.netty.channel.socket.DatagramPacket;
  */
 public class NettyUDPPeer extends NettyPeer {
 
-	private final InetSocketAddress recipient;
+	private final InetSocketAddress sender;
 	
 	/**
 	 * @param channelHandlerContext
-	 * @param recipient
+	 * @param sender
 	 */
-	public NettyUDPPeer(ChannelHandlerContext channelHandlerContext, InetSocketAddress recipient) {
+	public NettyUDPPeer(ChannelHandlerContext channelHandlerContext, InetSocketAddress sender) {
 		super(channelHandlerContext);
-		this.recipient = recipient;
+		this.sender = sender;
 	}
 	
 	@Override
 	public void send(Message message) throws IOException {
-		this.getChannelHandlerContext().write(new DatagramPacket(Unpooled.copiedBuffer(message.getData()), this.getRecipient()));
+		this.getChannelHandlerContext().write(new DatagramPacket(Unpooled.copiedBuffer(message.getData()), this.getSender()));
 		this.getChannelHandlerContext().flush();
+	}
+	
+	@Override
+	public SocketAddress getRemoteAddress() {
+		return this.getSender();
 	}
 	
 	/**
 	 * @return the recipient
 	 */
-	public InetSocketAddress getRecipient() {
-		return recipient;
+	public InetSocketAddress getSender() {
+		return sender;
 	}
 	
 }

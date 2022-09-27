@@ -89,10 +89,10 @@ public class DNSMessage {
 		}
 		
 		for(int i = 0; i < this.getAnswers().length; i++) {
-			final byte[] name = Arrays.copyOfRange(message.getData(), offset, offset += message.getData()[offset] == 0 ? 1 : 2);
+			final byte[] name = Arrays.copyOfRange(message.getData(), offset, offset += (message.getData()[offset] == 0 ? 1 : 2));
 			final int type = (message.getData()[offset++] << 8) | message.getData()[offset++];
 			final int queryClass = (message.getData()[offset++] << 8) | message.getData()[offset++];
-			final long timeToLive = (((long) message.getData()[offset++]) << 24) | (((long) message.getData()[offset++]) << 16) | (((long) message.getData()[offset++]) << 8) | ((long) message.getData()[offset++]);
+			final long timeToLive = ((message.getData()[offset++] & 0xFFL) << 24) | ((message.getData()[offset++] & 0xFFL) << 16) | ((message.getData()[offset++] & 0xFFL) << 8) | (message.getData()[offset++] & 0xFFL);
 			final int dataLength = (message.getData()[offset++] << 8) | message.getData()[offset++];
 			
 			final byte[] data = Arrays.copyOfRange(message.getData(), offset, offset += dataLength);
@@ -101,10 +101,10 @@ public class DNSMessage {
 		}
 		
 		for(int i = 0; i < this.getAuthoritativeNameservers().length; i++) {
-			final byte[] name = Arrays.copyOfRange(message.getData(), offset, offset += message.getData()[offset] == 0 ? 1 : 2);
+			final byte[] name = Arrays.copyOfRange(message.getData(), offset, offset += (message.getData()[offset] == 0 ? 1 : 2));
 			final int type = (message.getData()[offset++] << 8) | message.getData()[offset++];
 			final int queryClass = (message.getData()[offset++] << 8) | message.getData()[offset++];
-			final long timeToLive = (((long) message.getData()[offset++]) << 24) | (((long) message.getData()[offset++]) << 16) | (((long) message.getData()[offset++]) << 8) | ((long) message.getData()[offset++]);
+			final long timeToLive = ((message.getData()[offset++] & 0xFFL) << 24) | ((message.getData()[offset++] & 0xFFL) << 16) | ((message.getData()[offset++] & 0xFFL) << 8) | (message.getData()[offset++] & 0xFFL);
 			final int dataLength = (message.getData()[offset++] << 8) | message.getData()[offset++];
 			final byte[] data = Arrays.copyOfRange(message.getData(), offset, offset += dataLength);
 			
@@ -112,14 +112,28 @@ public class DNSMessage {
 		}
 		
 		for(int i = 0; i < this.getAdditionalRecords().length; i++) {
-			final byte[] name = Arrays.copyOfRange(message.getData(), offset, offset += message.getData()[offset] == 0 ? 1 : 2);
+			final byte[] name = Arrays.copyOfRange(message.getData(), offset, offset += (message.getData()[offset] == 0 ? 1 : 2));
 			final int type = (message.getData()[offset++] << 8) | message.getData()[offset++];
-			final int queryClass = (message.getData()[offset++] << 8) | message.getData()[offset++];
-			final long timeToLive = (((long) message.getData()[offset++]) << 24) | (((long) message.getData()[offset++]) << 16) | (((long) message.getData()[offset++]) << 8) | ((long) message.getData()[offset++]);
-			final int dataLength = (message.getData()[offset++] << 8) | message.getData()[offset++];
-			final byte[] data = Arrays.copyOfRange(message.getData(), offset, offset += dataLength);
 			
-			this.getAdditionalRecords()[i] = new DNSAnswer(name, type, queryClass, timeToLive, data);
+			if(type == DNSQuery.TYPE_OPT) {
+				final int payloadSize = (message.getData()[offset++] << 8) | message.getData()[offset++];
+				final byte higherBits = message.getData()[offset++];
+				final byte ednsVersion = message.getData()[offset++];
+				
+				offset += 2; // Skip reserved.
+				
+				final int dataLength = (message.getData()[offset++] << 8) | message.getData()[offset++];
+				 
+				this.getAdditionalRecords()[i] = new OptAnswer(name, payloadSize, higherBits, ednsVersion, Arrays.copyOfRange(message.getData(), offset, offset += dataLength));
+			} else {
+				final int queryClass = (message.getData()[offset++] << 8) | message.getData()[offset++];
+				final long timeToLive = ((message.getData()[offset++] & 0xFFL) << 24) | ((message.getData()[offset++] & 0xFFL) << 16) | ((message.getData()[offset++] & 0xFFL) << 8) | (message.getData()[offset++] & 0xFFL);
+				final int dataLength = (message.getData()[offset++] << 8) | message.getData()[offset++];
+				
+				final byte[] data = Arrays.copyOfRange(message.getData(), offset, offset += dataLength);
+				
+				this.getAdditionalRecords()[i] = new DNSAnswer(name, type, queryClass, timeToLive, data);
+			}
 		}
 	}
 	
