@@ -1,7 +1,7 @@
 # DNSHole - Base
 This is a pretty old project of mine where I implemented the DNS protocol in Java. This is the foundation for a pihole-like application, featuring a web-frontend & JavaFX desktop application.
 
-> This code is relatively old so I verifying everything before using it. I was also pretty unexperienced at the time of writing.
+> This code is relatively old so I recommend verifying everything before using it. I was also pretty inexperienced at the time of writing.
 The project provides data structures for DNS messages & a small tcp/udp server implementation.
 
 # Example
